@@ -1,0 +1,50 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: percona-expoter
+  namespace: percona-cstor      
+  labels:
+    app: percona-expoter
+    pvc: percona-cstor-claim
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: percona-expoter
+  template: 
+    metadata:
+      labels: 
+        app: percona-expoter
+        pvc: percona-cstor-claim
+    spec:
+      containers:
+        - resources:
+            limits:
+              cpu: 0.5
+          name: percona-expoter
+          image: prom/mysqld-exporter
+          env:
+            - name: DATA_SOURCE_NAME
+              value: "root:k8sDem0@(percona-mysql.percona-cstor.svc.cluster.local:3306)/"
+          ports:
+            - containerPort: 9104
+              name: percona
+      nodeSelector:
+        statefulset: minio
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: percona-expoter-service
+  namespace: percona-cstor
+  labels:
+    app: percona-expoter-service
+spec:
+  ports:
+    - name: exporter
+      port: 9104
+      protocol: TCP
+      targetPort: 9104
+  selector:
+      app: percona-expoter
+
