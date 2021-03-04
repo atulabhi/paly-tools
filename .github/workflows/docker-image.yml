@@ -33,18 +33,38 @@ jobs:
               echo "tag build"
               sed -i "/tag: /s/:.*$/: $IMG_TAG/" ./manifest/helm/charts/values.yaml
               helm package ./manifest/helm/charts
-              ls 
-              cat ./manifest/helm/charts/values.yaml
+              git clone https://${user}:${pass}@github.com/mayadata-io/${REPO}.git
+              cd  ${REPO}
+              git checkout gh-pages
+              mkdir tmp
+              mv ../*.tgz ./tmp
+              helm repo index --url http://asset.mayadata.io/charts/ --merge ./index.yaml tmp
+              mv tmp/index.yaml .
           else
               echo "non tag build"
               sed "s/name: kubera-propel/name: kubera-propel-ci/g" -i ./manifest/helm/charts/Chart.yaml
               sed -i "/tag: /s/:.*$/: $IMG_TAG/" ./manifest/helm/charts/values.yaml
               helm package ./manifest/helm/charts
-              ls 
-              cat ./manifest/helm/charts/values.yaml
-              img_tag=${GITHUB_REF#refs/*/}-ci
+              git clone https://${user}:${pass}@github.com/mayadata-io/${REPO}.git
+              cd  ${REPO}
+              git checkout gh-pages
+              mkdir tmp
+              mv ../*.tgz ./tmp
+              helm repo index --url http://asset.mayadata.io/charts/ --merge ./index.yaml tmp
+              mv tmp/index.yaml .
           fi
-          # This is a condition where image tag looks like "pull/<pullrequest-name>" during pull request build
-          NEW_IMG_TAG=`echo $img_tag | sed "s/\//-/g"`
-          echo $NEW_IMG_TAG
-          echo export IMG_TAG=$NEW_IMG_TAG > env-vars
+      - name: Upload tar to  S3 bucket
+        uses: ItsKarma/aws-cli@v1.70.0
+        with:
+          args: s3 cp ./tmp/  s3://asset.mayadata.io/charts/ --recursive --acl public-read
+        env:
+          # Make sure to add the secrets in the repo settings page
+          # AWS_REGION is set to us-east-1 by default
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+          rm -rf tmp
+          git add .
+          git commit -m "release new charts"
+          git push https://$(git_token)@github.com/mayadata-io/${REPO}.git --all
+          
