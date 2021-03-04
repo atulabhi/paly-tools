@@ -31,14 +31,14 @@ jobs:
           if [ ${array[1]} == "tags" ] 
           then
               echo "tag build"
-              sed -i '/tag: /s/:.*$/: $IMG_TAG/' ./manifest/helm/charts/values.yaml
+              sed -i "/tag: /s/:.*$/: $IMG_TAG/" ./manifest/helm/charts/values.yaml
               helm package ./manifest/helm/charts
               ls 
               cat ./manifest/helm/charts/values.yaml
           else
               echo "non tag build"
-              sed 's/name: kubera-propel/name: kubera-propel-ci/g' -i ./manifest/helm/charts/Chart.yaml
-              sed -i '/tag: /s/:.*$/: $IMG_TAG/' ./manifest/helm/charts/values.yaml
+              sed "s/name: kubera-propel/name: kubera-propel-ci/g" -i ./manifest/helm/charts/Chart.yaml
+              sed -i "/tag: /s/:.*$/: $IMG_TAG/" ./manifest/helm/charts/values.yaml
               helm package ./manifest/helm/charts
               ls 
               cat ./manifest/helm/charts/values.yaml
