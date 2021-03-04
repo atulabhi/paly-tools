@@ -29,11 +29,17 @@ jobs:
           img_tag=""
           array=(`echo ${GITHUB_REF} | sed 's/\//\n/g'`)
           if [ ${array[1]} == "tags" ] 
-          then 
+          then
               echo "tag build"
+              helm package ./manifest/helm/charts
               img_tag=${GITHUB_REF#refs/*/}
           else
               echo "non tag build"
+              sed 's/name: kubera-propel/name: kubera-propel-ci/g' -i ./manifest/helm/charts/Chart.yaml
+              sed -i '/tag: /s/:.*$/: $IMG_TAG/' ./manifest/helm/charts/values.yaml
+              helm package ./manifest/helm/charts
+              ls 
+              cat ./manifest/helm/charts/values.yaml
               img_tag=${GITHUB_REF#refs/*/}-ci
           fi
           # This is a condition where image tag looks like "pull/<pullrequest-name>" during pull request build
