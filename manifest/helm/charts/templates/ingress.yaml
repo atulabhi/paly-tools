@@ -1,0 +1,47 @@
+{{- if .Values.ingress.enabled -}}
+{{- $fullName := include "kubera-propel.fullname" . -}}
+{{- $svcWebAppPort := .Values.webApp.service.port -}}
+{{- $svcServerPort := .Values.server.service.port -}}
+apiVersion: {{ include "kubera-propel.ingressAPIVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-ingress
+  labels:
+    {{- include "kubera-propel.ingress.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+      - {{ .Values.ingress.host }}
+      secretName: {{ printf "%s-tls" .Values.ingress.host }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+        {{- if $.Capabilities.APIVersions.Has "networking.k8s.io/v1/ingress" }}
+        - backend:
+            name: {{ template "kubera-propel.fullname" . }}-server
+            port:
+              number: {{ .Values.server.service.port }}
+          path: {{ .Values.productPath }}/api/graphql/(.*)
+        - backend:
+            name: {{ template "kubera-propel.fullname" . }}-webapp
+            port:
+              number: {{ .Values.webApp.service.port }}
+          path: {{ .Values.productPath }}/(.*)
+        {{- else }}
+        - backend:
+            serviceName: {{ template "kubera-propel.fullname" . }}-server
+            servicePort: {{ .Values.server.service.port }}
+          path: {{ .Values.productPath }}/api/graphql/(.*)
+        - backend:
+            serviceName: {{ template "kubera-propel.fullname" . }}-webapp
+            servicePort: {{ .Values.webApp.service.port }}
+          path: {{ .Values.productPath }}/(.*)
+        {{- end }}
+  {{- end }}

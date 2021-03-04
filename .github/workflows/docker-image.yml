@@ -23,6 +23,20 @@ jobs:
           version: v3.4.0
 
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.2.0
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        uses: actions/checkout@v2
+      - shell: bash
+        run: |
+          img_tag=""
+          array=(`echo ${GITHUB_REF} | sed 's/\//\n/g'`)
+          if [ ${array[1]} == "tags" ] 
+          then 
+              echo "tag build"
+              img_tag=${GITHUB_REF#refs/*/}
+          else
+              echo "non tag build"
+              img_tag=${GITHUB_REF#refs/*/}-ci
+          fi
+          # This is a condition where image tag looks like "pull/<pullrequest-name>" during pull request build
+          NEW_IMG_TAG=`echo $img_tag | sed "s/\//-/g"`
+          echo $NEW_IMG_TAG
+          echo export IMG_TAG=$NEW_IMG_TAG > env-vars

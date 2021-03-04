@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "kubera-propel.fullname" . }}-server
+  {{- with .Values.server.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "kubera-propel.server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.server.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubera-propel.server.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.server.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "kubera-propel.server.labels" . | nindent 8 }}
+        {{- if .Values.server.podLabels }}
+        {{ toYaml .Values.server.podLabels | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{ toYaml .Values.imagePullSecrets | indent 2 }}
+      {{- end }}
+      serviceAccountName: {{ template "kubera-propel.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.server.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ template "kubera-propel.fullname" . }}-server
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.server.image.server.registry }}{{ .Values.server.image.server.repository }}:{{ .Values.server.image.server.tag }}"
+          imagePullPolicy: {{ .Values.server.image.server.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.server.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.server.resources | nindent 12 }}
+          env:
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: JWT_SECRET
+              value: {{ .Values.jwt_secret }}
+            - name: EXTERNAL_ADDRESS
+              value: ""
+            - name:  PROPEL_SERVER_ADDRESS
+              value: http://propel-server:9002
+            - name: FRONTEND_URL
+              value: http://propel-server:9001
+            - name: CORE_URL
+              value: {{ .Values.coreUrl }}
+            - name: SELF_CLUSTER
+              value: "true"
+            - name: PROPEL_AGENT_SUBSCRIBER_IMAGE
+              value: "{{ .Values.server.image.subscriber.registry }}{{ .Values.server.image.subscriber.repository }}:{{ .Values.server.image.subscriber.tag }}"
+            - name: PROPEL_AGENT_CONTROLLER_IMAGE
+              value: "{{ .Values.server.image.controller.registry }}{{ .Values.server.image.controller.repository }}:{{ .Values.server.image.controller.tag }}"
+            - name: PROPEL_AGENT_SERVICE_ACCOUNT_NAME
+              value: {{ template "kubera-propel.serviceAccountName" . }}
+{{- if .Values.imagePullSecrets }}
+            - name: PROPEL_IMAGE_PULL_SECRET
+              value: "{{- range $.Values.imagePullSecrets }}{{ .name }},{{- end }}"
+{{- end }}
+          envFrom:
+          - configMapRef:
+              name: {{ .Values.commonConfigMap }}
+          - configMapRef:
+              name: {{ .Values.agentGatewayConfigMap }}
+      {{- with .Values.server.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.server.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

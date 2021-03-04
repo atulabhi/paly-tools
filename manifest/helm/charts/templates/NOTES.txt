@@ -1,0 +1,2 @@
+The Kubera-propel has been installed check its status by running:
+$ kubectl get pods -n {{ .Release.Namespace }}

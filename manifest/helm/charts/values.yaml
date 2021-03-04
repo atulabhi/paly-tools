@@ -1,0 +1,108 @@
+# Default values for kubera-propel.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+release:
+  version: "0.0.1"
+
+imagePullSecrets:
+
+# JWT secret for the product
+jwt_secret: "XYZ"
+coreUrl: "http://localhost"
+productPath: ""
+
+serviceAccount:
+  # Annotations to add to the service account
+  annotations: {}
+  propel:
+    # Specifies whether a service account should be created
+    create: true
+    # name of the service account, if empty then it will be generated using release name and chart name, like chart-1613645647-kubera-propel
+    name: webAppAcc
+
+commonConfigMap: "common"
+agentGatewayConfigMap: "agent-gateway"
+
+webApp:
+  componentName: propel-webapp
+  image:
+    # Make sure that registry name end with a '/'.
+    # For example : quay.io/ is a correct value here and quay.io is incorrect
+    registry: kubera.image.registry/
+    repository: kubera-propel-webapp
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: 0.0.1
+  failurePolicy: "Fail"
+  annotations: {}
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  resources: {}
+  podSecurityContext: {}
+  port: 8080
+  replicaCount: 1
+  service:
+    type: NodePort
+    port: 9002
+
+server:
+  componentName: propel-server
+  image:
+    # Make sure that registry name end with a '/'.
+    # For example : quay.io/ is a correct value here and quay.io is incorrect
+    server:
+      registry: kubera.image.registry/
+      repository: kubera-propel-server
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: 0.0.1
+    subscriber:
+      registry: kubera.image.registry/
+      repository: kubera-propel-agent-subscriber
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: 0.0.1
+    controller:
+      registry: kubera.image.registry/
+      repository: kubera-propel-agent-controller
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: 0.0.1
+  failurePolicy: "Fail"
+  annotations: {}
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  resources: {}
+  podSecurityContext: {}
+  port: 8080
+  replicaCount: 1
+  service:
+    type: NodePort
+    port: 9091
+
+
+ingress:
+  enabled: true
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  host: kubera.domain
+  ## To enable TLS config for the host
+  ## TLS certificates will be fetched from a secret with name "'.Values.ingress.host'-tls"
+  ##
+  tls: false
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "kubera-propel.fullname" . }}-webapp
+  labels:
+    {{- include "kubera-propel.webApp.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.webApp.service.type }}
+  ports:
+    - name: propel-webapp
+      nodePort: 31002
+      port: {{ .Values.webApp.service.port }}
+      targetPort: {{ .Values.webApp.port }}
+  selector:
+    {{- include "kubera-propel.webApp.matchLabels" . | nindent 4 }}

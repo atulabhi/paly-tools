@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "kubera-propel.fullname" . }}-webapp
+  {{- with .Values.webApp.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "kubera-propel.webApp.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.webApp.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubera-propel.webApp.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.webApp.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "kubera-propel.webApp.labels" . | nindent 8 }}
+        {{- if .Values.webApp.podLabels }}
+        {{ toYaml .Values.webApp.podLabels | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{ toYaml .Values.imagePullSecrets | indent 2 }}
+      {{- end }}
+      serviceAccountName: {{ template "kubera-propel.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.webApp.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ template "kubera-propel.fullname" . }}-webapp
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.webApp.image.registry }}{{ .Values.webApp.image.repository }}:{{ .Values.webApp.image.tag }}"
+          imagePullPolicy: {{ .Values.webApp.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.webApp.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.webApp.resources | nindent 12 }}
+      {{- with .Values.webApp.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webApp.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
